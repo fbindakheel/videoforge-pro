@@ -48,37 +48,45 @@
 
 ## 🚀 Installation
 
-### 1. Install FFmpeg
+### Method 1: Download Executable (Easiest)
 
-**Windows** (recommended):
-```powershell
-winget install Gyan.FFmpeg
-```
-Or download from [ffmpeg.org](https://ffmpeg.org/download.html). Ensure `ffmpeg` is accessible on your `PATH`.
+1. Go to the **[Releases](https://github.com/fbi/videoforge-pro/releases)** page.
+2. Download the latest `VideoForge-Pro.zip` file.
+3. Extract the folder and double click `VideoForge-Pro.exe`.
+   *(No Python or FFmpeg manual installation strictly required if bundled, but system FFmpeg is recommended for advanced Codecs)*
 
-**macOS:**
+### Method 2: Download & Double-Click (Windows Only)
+
+If you don't want to use the pre-built `.exe`, but still want an easy setup:
+1. Download the source code as a ZIP file and extract it.
+2. Ensure you have **Python 3.10+** installed (check "Add Python to PATH" during installation).
+3. Double-click the **`start_videoforge.bat`** file. 
+   - It will automatically set up the environment, install dependencies, and launch the app.
+
+### Method 3: From Source (For Developers)
+
+1. **Install FFmpeg**
+   - **Windows:** `winget install Gyan.FFmpeg`
+   - **macOS:** `brew install ffmpeg`
+   - **Linux:** `sudo apt update && sudo apt install ffmpeg`
+2. **Clone & Install**
+   ```bash
+   git clone https://github.com/fbi/videoforge-pro.git
+   cd videoforge-pro
+   pip install -r requirements.txt
+   ```
+3. **Run**
+   ```bash
+   python main.py
+   ```
+   
+### 📦 Building the Executable Yourself
+To create your own standalone `.exe`:
 ```bash
-brew install ffmpeg
+pip install pyinstaller
+python build.py
 ```
-
-**Linux (Ubuntu/Debian):**
-```bash
-sudo apt update && sudo apt install ffmpeg
-```
-
-### 2. Clone & Install Python Dependencies
-
-```bash
-git clone https://github.com/YOUR_USERNAME/videoforge-pro.git
-cd videoforge-pro
-pip install -r requirements.txt
-```
-
-### 3. Run
-
-```bash
-python main.py
-```
+The executable will be generated in the `dist/VideoForge-Pro/` folder.
 
 ---
 
