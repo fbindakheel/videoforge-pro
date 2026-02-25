@@ -51,8 +51,8 @@
 ### Method 1: Download Executable (Easiest)
 
 1. Go to the **[Releases](https://github.com/fbi/videoforge-pro/releases)** page.
-2. Download the latest `VideoForge-Pro.zip` file.
-3. Extract the folder and double click `VideoForge-Pro.exe`.
+2. Download the latest `VideoForge-Pro.exe` file.
+3. Double-click `VideoForge-Pro.exe` to run the app.
    *(No Python or FFmpeg manual installation strictly required if bundled, but system FFmpeg is recommended for advanced Codecs)*
 
 ### Method 2: Download & Double-Click (Windows Only)

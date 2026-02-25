@@ -30,7 +30,7 @@ def build_executable():
     args = [
         "pyinstaller",
         "--noconfirm",         # Overwrite output directory without asking
-        "--onedir",            # Create a one-folder bundle (faster startup than onefile)
+        "--onefile",           # Create a single executable file
         "--windowed",          # Don't show a console window (GUI app)
         "--name", "VideoForge-Pro", # Name of the executable
         # Exclude unnecessary modules to reduce size

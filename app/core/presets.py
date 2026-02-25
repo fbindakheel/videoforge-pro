@@ -34,6 +34,7 @@ class JobConfig:
     # Audio
     audio_format: str = "aac"      # aac, mp3, wav, opus, copy, none
     audio_bitrate_kbps: int = 128
+    volume_factor: float = 1.0     # 1.0 = original, 2.0 = 200%
     mute_audio: bool = False
     normalize_audio: bool = False
 
@@ -54,6 +55,7 @@ class JobConfig:
     # Watermark
     watermark_path: str = ""
     watermark_position: str = "bottomright"  # topleft, topright, bottomleft, bottomright
+    text_watermark: str = ""       # Text to burn into the video
 
     # Auto-naming
     auto_name_suffix: str = "_vf"

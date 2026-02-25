@@ -79,6 +79,7 @@ class VideoProcessor(QThread):
         self.duration = duration
         self._process: subprocess.Popen | None = None
         self._cancelled = False
+        self._temp_files_to_cleanup: list[str] = []
 
     def cancel(self):
         self._cancelled = True
@@ -226,6 +227,8 @@ class VideoProcessor(QThread):
         af_filters = []
         if config.normalize_audio:
             af_filters.append("dynaudnorm")
+        if config.volume_factor != 1.0:
+            af_filters.append(f"volume={config.volume_factor}")
 
         # Speed: audio atempo (must be chained for factors > 2 or < 0.5)
         if config.speed_factor != 1.0:
@@ -274,8 +277,7 @@ class VideoProcessor(QThread):
 
     # ── Video filter builder ──────────────────────────────────────────────────
 
-    @staticmethod
-    def _build_vf_filters(config: JobConfig) -> list[str]:
+    def _build_vf_filters(self, config: JobConfig) -> list[str]:
         """Collect all -vf filter strings for this config."""
         filters = []
 
@@ -316,6 +318,30 @@ class VideoProcessor(QThread):
         if config.subtitle_enabled and config.subtitle_path:
             safe_path = config.subtitle_path.replace("\\", "/").replace(":", "\\:")
             filters.append(f"subtitles='{safe_path}'")
+
+        # Text Watermark
+        if config.text_watermark:
+            import tempfile
+            import uuid
+            # Create a robust temporary file in the *current directory* to avoid Windows drive letter parsing bugs in FFmpeg
+            temp_filename = f"watermark_{uuid.uuid4().hex[:8]}.txt"
+            with open(temp_filename, "w", encoding="utf-8") as tf:
+                tf.write(config.text_watermark)
+            # Store it to delete later
+            self._temp_files_to_cleanup.append(temp_filename)
+            
+            # Format the path for FFmpeg (relative path, just the filename)
+            safe_path = temp_filename
+            
+            # Basic centered watermark
+            # On Windows, drawtext often fails without an explicit fontfile
+            import platform
+            font_param = "fontfile='C\\:/Windows/Fonts/arial.ttf':" if platform.system() == "Windows" else ""
+            
+            filters.append(
+                f"drawtext={font_param}textfile={safe_path}:x=(w-text_w)/2:y=h-th-20"
+                ":fontcolor=white:fontsize=36:box=1:boxcolor=black@0.5"
+            )
 
         return filters
 

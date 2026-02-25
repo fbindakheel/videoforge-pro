@@ -482,14 +482,51 @@ class MainWindow(QMainWindow):
                                 "Press Start Processing — they will be merged into one output.")
 
     def _open_output_folder(self):
-        cfg = self._settings_panel.get_config()
-        folder = cfg.output_folder or str(Path.home())
-        if os.path.isdir(folder):
-            import subprocess
-            if os.name == "nt":
-                subprocess.Popen(["explorer", folder])
-            elif os.name == "posix":
-                subprocess.Popen(["open" if os.uname().sysname == "Darwin" else "xdg-open", folder])
-        else:
-            QMessageBox.information(self, "Output Folder",
-                                    "No output folder set. Files are saved next to their originals.")
+        # Determine the best folder/file to open
+        target = None
+
+        # 1. Did we just finish a batch? Select the last output file.
+        if self._batch and self._batch.jobs:
+            last_job = self._batch.jobs[-1]
+            if last_job.status in (JobStatus.DONE, JobStatus.ERROR) and last_job.output_path:
+                if os.path.exists(last_job.output_path):
+                    target = last_job.output_path
+
+        # 2. Otherwise, open the output folder from settings.
+        if not target:
+            cfg = self._settings_panel.get_config()
+            if cfg.output_folder and os.path.isdir(cfg.output_folder):
+                target = cfg.output_folder
+
+        # 3. Otherwise, try the directory of the first input file.
+        if not target and self._file_list.count() > 0:
+            first_path = self._file_list.file_paths()[0]
+            if first_path:
+                target = os.path.dirname(first_path)
+
+        # Fallback to home dir
+        if not target:
+            target = str(Path.home())
+
+        if not os.path.exists(target):
+            QMessageBox.information(self, "Output Folder", "Target folder or file does not exist.")
+            return
+
+        import subprocess
+        if os.name == "nt":
+            # On Windows, try to 'select' the file if it's a file, otherwise open dir
+            if os.path.isfile(target):
+                subprocess.Popen(f'explorer /select,"{os.path.normpath(target)}"')
+            else:
+                subprocess.Popen(f'explorer "{os.path.normpath(target)}"')
+        elif os.name == "posix":
+            # macOS / Linux
+            opener = "open" if os.uname().sysname == "Darwin" else "xdg-open"
+            
+            # 'open -R' reveals the file in Finder on macOS
+            if sys.platform == "darwin" and os.path.isfile(target):
+                subprocess.Popen([opener, "-R", target])
+            else:
+                # If it's a file on Linux, or opening dir on macOS/Linux
+                target_dir = os.path.dirname(target) if os.path.isfile(target) else target
+                subprocess.Popen([opener, target_dir])

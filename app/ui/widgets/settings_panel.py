@@ -3,17 +3,16 @@ settings_panel.py — Tabbed settings panel for VideoForge Pro
 Tabs: Compression · Resolution · Format · Audio · Trim & Edit · Presets · Filters
 """
 import os
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QTime
 from PyQt6.QtWidgets import (
     QWidget, QTabWidget, QVBoxLayout, QHBoxLayout, QFormLayout,
     QLabel, QSlider, QComboBox, QCheckBox, QLineEdit,
     QSpinBox, QPushButton, QGroupBox, QTimeEdit, QFileDialog,
     QDoubleSpinBox, QSizePolicy,
 )
-from PyQt6.QtCore import QTime
 
 from app.core.presets import JobConfig, PresetManager
-from app.core.utils import format_size, estimate_output_size, crf_to_bitrate_estimate
+from app.core.utils import format_size, estimate_output_size, crf_to_bitrate_estimate, seconds_to_hhmmss, hhmmss_to_seconds
 
 
 RESOLUTION_OPTIONS = ["Original", "4K (2160p)", "1080p", "720p", "480p", "360p", "Custom"]
@@ -319,6 +318,23 @@ class SettingsPanel(QWidget):
         self._normalize_check.toggled.connect(self._emit)
         glay.addWidget(self._mute_check)
         glay.addWidget(self._normalize_check)
+
+        # Volume factor
+        vol_row = QHBoxLayout()
+        self._volume_slider = QSlider(Qt.Orientation.Horizontal)
+        self._volume_slider.setRange(0, 200)
+        self._volume_slider.setValue(100)
+        self._volume_slider.setSingleStep(5)
+        self._volume_label = QLabel("100%")
+        self._volume_label.setMinimumWidth(50)
+        self._volume_slider.valueChanged.connect(
+            lambda v: (self._volume_label.setText(f"{v}%"), self._emit())
+        )
+        vol_row.addWidget(QLabel("Volume Boost:"))
+        vol_row.addWidget(self._volume_slider)
+        vol_row.addWidget(self._volume_label)
+        glay.addLayout(vol_row)
+
         lay.addWidget(grp)
 
         lay.addStretch()
@@ -584,7 +600,6 @@ class SettingsPanel(QWidget):
 
     def get_config(self) -> JobConfig:
         """Read all UI fields and return a JobConfig."""
-        from app.core.utils import hhmmss_to_seconds
         res_text = self._res_combo.currentText()
         res_map   = {"4K (2160p)": "4K", "1080p": "1080p", "720p": "720p",
                      "480p": "480p", "360p": "360p", "Original": "Original"}
@@ -609,6 +624,7 @@ class SettingsPanel(QWidget):
             # Audio
             audio_format      = self._audio_format_combo.currentText(),
             audio_bitrate_kbps = self._audio_bitrate.value(),
+            volume_factor     = self._volume_slider.value() / 100.0,
             mute_audio        = self._mute_check.isChecked(),
             normalize_audio   = self._normalize_check.isChecked(),
             # Trim
@@ -628,12 +644,12 @@ class SettingsPanel(QWidget):
             speed_factor      = self._speed_slider.value() / 100.0,
             subtitle_enabled  = self._subtitle_check.isChecked(),
             subtitle_path     = self._subtitle_edit.text().strip(),
+            text_watermark    = self._text_watermark_edit.text().strip(),
         )
         return cfg
 
     def apply_config(self, cfg: JobConfig):
         """Push a JobConfig into all UI fields."""
-        from app.core.utils import seconds_to_hhmmss
         self._crf_slider.setValue(cfg.crf)
         self._speed_combo.setCurrentText(cfg.preset_speed)
         self._hw_check.setChecked(cfg.use_hw_accel)
@@ -654,6 +670,7 @@ class SettingsPanel(QWidget):
         if idx3 >= 0:
             self._audio_format_combo.setCurrentIndex(idx3)
         self._audio_bitrate.setValue(cfg.audio_bitrate_kbps)
+        self._volume_slider.setValue(int(cfg.volume_factor * 100))
         self._mute_check.setChecked(cfg.mute_audio)
         self._normalize_check.setChecked(cfg.normalize_audio)
         self._trim_check.setChecked(cfg.trim_enabled)
@@ -678,6 +695,8 @@ class SettingsPanel(QWidget):
         self._subtitle_btn.setEnabled(cfg.subtitle_enabled)
         if cfg.subtitle_path:
             self._subtitle_edit.setText(cfg.subtitle_path)
+        if hasattr(self, '_text_watermark_edit'):
+            self._text_watermark_edit.setText(cfg.text_watermark)
 
     def set_hw_encoder_info(self, encoders: list[str]):
         if encoders:
